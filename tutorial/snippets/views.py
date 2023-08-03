@@ -1,11 +1,12 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from snippets.models import Snippet
 from snippets.serializers import SnippetSerializer
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.contrib.auth.models import User
 
 
 class SnippetList(APIView):
@@ -96,3 +97,6 @@ def delete(self, request, pk, format=None):
 #     elif request.method == 'DELETE':
 #         snippet.delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class UserList(generics.ListApiView):
+     
