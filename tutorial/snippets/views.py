@@ -1,18 +1,43 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status, generics
+from rest_framework import status, generics, permissions, mixins
 from snippets.models import Snippet
-from snippets.serializers import SnippetSerializer
+from snippets.serializers import SnippetSerializer, UserSerializer
+from snippets.permissions import IsOwnerOrReadOnly
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 
 
-class SnippetList(APIView):
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+    
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
     """
     List all code snippets, or create a new snippet.
     """
+
+""" 
+Before refactor with generic class based views: 
+
     def get(self, request, format=None):
             snippets = Snippet.objects.all()
             serializer = SnippetSerializer(snippets, many=True)
@@ -24,6 +49,8 @@ class SnippetList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+"""
 
 # Function based view:
 # @api_view(['GET', 'POST'])
@@ -43,10 +70,9 @@ class SnippetList(APIView):
 #             return Response(serializer.data, status=status.HTTP_201_CREATED)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class SnippetDetail(APIView):
-    """
-    Retrieve, update or delete a code snippet.
-    """
+"""
+Before refactor for generic class based views:
+
     def get_object(self,pk):
         try:
             return Snippet.objects.get(pk=pk)
@@ -70,7 +96,8 @@ def delete(self, request, pk, format=None):
         snippet = self.get_object(pk)
         snippet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+"""
+
 # Function based view
 
 #     @api_view(['GET','PUT','DELETE'])
@@ -98,5 +125,10 @@ def delete(self, request, pk, format=None):
 #         snippet.delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class UserList(generics.ListApiView):
-     
+class UserList(generics.ListAPIView):
+     queryset = User.objects.all()
+     serializer_class = UserSerializer
+
+class UserDetail(generics.RetrieveAPIView):
+     queryset = User.objects.all()
+     serializer_class = UserSerializer
